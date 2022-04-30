@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Contour CT Scan</title>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+            body {
+                font-family: sans-serif;
+                background-color: #d3d3d3;
+            }
+
+            h1, h3 {
+                text-align: center;
+                color: white;
+                
+            }
+            div.top {
+                background-color: rgb(58, 58, 58);
+            }
+
+            svg {
+                width: 70vw;
+                height: 70vh;
+                background-color: #f5f5f5;
+                margin: auto;
+                display: block;
+                border: black;
+            }
+            #parentdiv {
+                display:inline-block;
+            }
+            div.child1 {
+                padding-left: 50px;
+                padding-top: 50px;
+            }
+            div.child2 {
+                padding-right: 70px;
+                padding-top: 50px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="top">
+            <h1>Major Assignment 4 - Part1</h1>
+            <h3>by Abhijot Bedi (01908371)</h3>
+        </div>
+
+
+        <div class="parentdiv">
+            <div class="child1" style="width: 80%; float: left;">
+                <svg viewbox="0 0 500 1000"></svg>
+            </div>
+            <div class="child2" style="width: 20%; float: right;">
+                <label for="slider1"  class="form-label">Threshole Size:<div id="binNumber"></div> </label>
+                <input id=slider1 type="range" min="100" max="300" value="150" step="1" class="rngSlider1 form-control form-range" oninput="rangeValue1.innerText = this.value">
+                <p id="rangeValue1">150</p>
+                <label for="slider2"  class="form-label">Minimum:<div id="binNumber"></div> </label>
+                <input id=slider2 type="range" min="200" max="700" value="512" step="1" class="rngSlider2 form-control form-range" oninput="rangeValue2.innerText = this.value">
+                <p id="rangeValue2">512</p>
+                <label for="slider3"  class="form-label">Maximum:<div id="binNumber"></div> </label>
+                <input id=slider3 type="range" min="200" max="700" value="512" step="1" class="rngSlider3 form-control form-range" oninput="rangeValue3.innerText = this.value">
+                <p id="rangeValue3">512</p>
+            </div>
+        </div>
+
+
+        <script>
+            const ct_data = "data/Data_CT.csv"
+            let svg = d3.select("svg");
+            const path = d3.geoPath();
+    
+            // making a function that generates plot using filename
+            function CT_Scan(data, thr, min, max) {
+    
+                d3.csv(data).then(data => {
+                    let m = 512,
+                        n = 512;
+    
+                    // converting data into list
+                    let data_list = [];
+                    data.forEach(function(d) {
+                        data_list.push(+d[0])
+                    });
+                    console.log(data_list)
+    
+                    // get extent if case min and max is not provided
+                    if (min == undefined || max == undefined) {
+                        let range = d3.extent(data_list, d => d)
+                        min = range[0]
+                        max = range[1]
+                        console.log(range)
+                    }
+                    // console.log(thr)
+                    
+                    // create contour
+                    let contour = d3.contours()
+                        .size([m, n])
+                        .thresholds(d3.range(min, max, thr))(data_list);
+    
+                    // console.log(contour)
+    
+                    let colorScale = d3.scaleLinear()
+                        .domain(d3.range(min, max,
+                            parseInt(Math.abs(max - min) / 10)))
+                        .range([
+                            "#ffffff", "#ffffff", "#2d3f8c", "#3e5eba", "#2b83ba",
+                            "#abdda4", "#ffffbf", "#fdae61", "#d7191c"
+                        ])
+                        .interpolate(d3.interpolateHcl);
+    
+    
+                    svg.selectAll("*").remove();
+    
+                    paths = svg.selectAll("path")
+                        .data(contour)
+                        .enter()
+                        .append('path')
+                        .attr('d', path)
+                        .attr('stroke-width', '0.1px')
+                        .attr('stroke-linejoin', 'round')
+                        .attr('fill', 'none')
+                        .attr("stroke", "black")
+
+                    paths.transition()
+                        .attr('fill', d => {
+                            return colorScale(d.value)
+                        })
+
+                })
+
+            }
+
+            // sliders for threshold, min, max
+            d3.selectAll(".rngSlider1").on("input",function(ss){ 
+                let val = ss.target.valueAsNumber
+                console.log(val)
+                CT_Scan(ct_data, thr = val)
+
+                d3.selectAll(".rngSlider2").on("input",function(sss){ 
+                    let val1 = sss.target.valueAsNumber
+                    console.log(val1)
+                    CT_Scan(ct_data, thr = val, min = val1)
+
+                    d3.selectAll(".rngSlider3").on("input",function(ssss){ 
+                        let val2 = ssss.target.valueAsNumber
+                        console.log(val2)
+                        CT_Scan(ct_data, thr = val, min = val1, max = val2)
+                    })
+                })
+            })
+        </script>
+    </body>
+</html> 
